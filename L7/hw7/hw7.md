@@ -24,3 +24,31 @@ The many variants on Euler angles for ratations, the singularity of affine point
 * Intensity-based方法就是直接法的Bundle Adjustment
 * 文中提到的Network Structure对应现在应用比较广泛的图优化方法
 * 利用H的稀疏性特性可以实现BA实时，在07年的PTAM上进行了实现
+
+**2.2 BAL dataset**
+选取的数据集为problem-16-22106
+BA之前的点云图为
+![initial](./initial.png)
+BA之后的点云图为
+![final](./final.png)
+可以看出点云的结构特征有了非常明显的改善
+
+## 直接法的Bundle Adjustment
+**3.1 数学模型**
+
+*1.如何描述任意一点投影在任一图像中形成的error?*
+
+*2.每个error关联几个优化变量?*
+
+*3.error关于各变量的雅可比是什么?*
+
+
+**3.2 实现**
+
+*1.能否不要以$[x,y,z]^T$的形式参数化每个点?*
+
+*2.取4x4的patch好吗?取更大的patch好还是取小一点的patch好?*
+
+*3.从本题中，你看到直接法与特征点法在BA阶段有何不同?*
+
+*4.由于图像的差异，你可能需要鲁棒核函数，例如Huber。此时Huber的阈值如何选取?*
