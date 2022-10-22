@@ -44,6 +44,7 @@ BALProblem::BALProblem(const std::string &filename, bool use_quaternions)
         return;
     };
 
+    // Reference: https://www.runoob.com/cprogramming/c-function-fscanf.html
     // This wil die horribly on invalid files. Them's the breaks.
     FscanfOrDie(fptr, "%d", &num_cameras_);
     FscanfOrDie(fptr, "%d", &num_points_);
@@ -245,6 +246,7 @@ void BALProblem::Normalize()
         {
             tmp[j] = points[3 * j + i];
         }
+        // 求的是所有点坐标的中位数
         median(i) = Median(&tmp);
     }
 
