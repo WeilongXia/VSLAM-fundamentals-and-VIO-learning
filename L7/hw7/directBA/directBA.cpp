@@ -18,12 +18,12 @@ using namespace std;
 
 #include <Eigen/Core>
 #include <opencv2/opencv.hpp>
-#include <sophus/se3.h>
+#include <sophus/se3.hpp>
 
 #include <boost/format.hpp>
 #include <pangolin/pangolin.h>
 
-typedef vector<Sophus::SE3, Eigen::aligned_allocator<Sophus::SE3>> VecSE3;
+typedef vector<Sophus::SE3d, Eigen::aligned_allocator<Sophus::SE3d>> VecSE3;
 typedef vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> VecVec3d;
 
 // global variables
@@ -47,7 +47,7 @@ inline float GetPixelValue(const cv::Mat &img, float x, float y)
 }
 
 // g2o vertex that use sophus::SE3 as pose
-class VertexSophus : public g2o::BaseVertex<6, Sophus::SE3>
+class VertexSophus : public g2o::BaseVertex<6, Sophus::SE3d>
 {
   public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -70,13 +70,13 @@ class VertexSophus : public g2o::BaseVertex<6, Sophus::SE3>
 
     virtual void setToOriginImpl()
     {
-        _estimate = Sophus::SE3();
+        _estimate = Sophus::SE3d();
     }
 
     virtual void oplusImpl(const double *update_)
     {
         Eigen::Map<const Eigen::Matrix<double, 6, 1>> update(update_);
-        setEstimate(Sophus::SE3::exp(update) * estimate());
+        setEstimate(Sophus::SE3d::exp(update) * estimate());
     }
 };
 
@@ -102,11 +102,90 @@ class EdgeDirectProjection : public g2o::BaseBinaryEdge<16, Vector16d, g2o::Vert
     {
         // TODO START YOUR CODE HERE
         // compute projection error ...
+        // 每条边包含的一个位姿节点，一个路标节点，其设置节点时的索引与计算error时的节点索引一直，即setVertex(0,...)和_Vertex[0]对应
+        const g2o::VertexSBAPointXYZ *vertexPw = static_cast<const g2o::VertexSBAPointXYZ *>(vertex(0));
+        const VertexSophus *vertexTcw = static_cast<const VertexSophus *>(vertex(1));
+        Eigen::Vector3d Pc = vertexTcw->estimate() * vertexPw->estimate();
+        float u = Pc[0] / Pc[2] * fx + cx;
+        float v = Pc[1] / Pc[2] * fy + cy;
+        if (u - 2 < 0 || v - 2 < 0 || u + 1 >= targetImg.cols || v + 1 >= targetImg.rows)
+        {
+            this->setLevel(1);
+            for (int n = 0; n < 16; ++n)
+            {
+                _error[n] = 0;
+            }
+        }
+        else
+        {
+            for (int i = -2; i < 2; ++i)
+            {
+                for (int j = -2; j < 2; ++j)
+                {
+                    int num = 4 * i + j + 10;
+                    _error[num] = origColor[num] - GetPixelValue(targetImg, u + i, v + j);
+                }
+            }
+        }
 
         // END YOUR CODE HERE
     }
 
     // Let g2o compute jacobian for you
+    virtual void linearizeOplus() override
+    {
+        if (level() == 1)
+        {
+            _jacobianOplusXi = Eigen::Matrix<double, 16, 3>::Zero();
+            _jacobianOplusXj = Eigen::Matrix<double, 16, 6>::Zero();
+            return;
+        }
+        const g2o::VertexSBAPointXYZ *vertexPw = static_cast<const g2o::VertexSBAPointXYZ *>(vertex(0));
+        const VertexSophus *vertexTcw = static_cast<const VertexSophus *>(vertex(1));
+        Eigen::Vector3d Pc = vertexTcw->estimate() * vertexPw->estimate();
+        float x = Pc[0];
+        float y = Pc[1];
+        float z = Pc[2];
+        float inv_z = 1.0 / z;
+        float inv_z2 = inv_z * inv_z;
+        float u = x * inv_z * fx + cx;
+        float v = y * inv_z * fy + cy;
+
+        Eigen::Matrix<double, 2, 3> J_Puv_Pc;
+        J_Puv_Pc(0, 0) = fx * inv_z;
+        J_Puv_Pc(0, 1) = 0;
+        J_Puv_Pc(0, 2) = -fx * x * inv_z2;
+        J_Puv_Pc(1, 0) = 0;
+        J_Puv_Pc(1, 1) = fy * inv_z;
+        J_Puv_Pc(1, 2) = -fy * y * inv_z2;
+
+        Eigen::Matrix<double, 3, 6> J_Pc_Xi = Eigen::Matrix<double, 3, 6>::Zero();
+        J_Pc_Xi(0, 0) = 1;
+        J_Pc_Xi(0, 4) = z;
+        J_Pc_Xi(0, 5) = -y;
+        J_Pc_Xi(1, 1) = 1;
+        J_Pc_Xi(1, 3) = -z;
+        J_Pc_Xi(1, 5) = x;
+        J_Pc_Xi(2, 2) = 1;
+        J_Pc_Xi(2, 3) = y;
+        J_Pc_Xi(2, 4) = -x;
+
+        Eigen::Matrix<double, 1, 2> J_I_Puv;
+        for (int i = -2; i < 2; ++i)
+        {
+            for (int j = -2; j < 2; ++j)
+            {
+                int num = 4 * i + j + 10;
+                J_I_Puv(0, 0) =
+                    (GetPixelValue(targetImg, u + i + 1, v + j) - GetPixelValue(targetImg, u + i - 1, v + j)) / 2;
+                J_I_Puv(0, 1) =
+                    (GetPixelValue(targetImg, u + i, v + j + 1) - GetPixelValue(targetImg, u + i, v + j - 1)) / 2;
+
+                _jacobianOplusXi.block<1, 3>(num, 0) = -J_I_Puv * J_Puv_Pc * vertexTcw->estimate().rotationMatrix();
+                _jacobianOplusXj.block<1, 6>(num, 0) = -J_I_Puv * J_Puv_Pc * J_Pc_Xi;
+            }
+        }
+    }
 
     virtual bool read(istream &in)
     {
@@ -141,8 +220,8 @@ int main(int argc, char **argv)
         double data[7];
         for (auto &d : data)
             fin >> d;
-        poses.push_back(Sophus::SE3(Eigen::Quaterniond(data[6], data[3], data[4], data[5]),
-                                    Eigen::Vector3d(data[0], data[1], data[2])));
+        poses.push_back(Sophus::SE3d(Eigen::Quaterniond(data[6], data[3], data[4], data[5]),
+                                     Eigen::Vector3d(data[0], data[1], data[2])));
         if (!fin.good())
             break;
     }
@@ -172,7 +251,7 @@ int main(int argc, char **argv)
 
     // read images
     vector<cv::Mat> images;
-    boost::format fmt("./%d.png");
+    boost::format fmt("../dataset/%d.png");
     for (int i = 0; i < 7; i++)
     {
         images.push_back(cv::imread((fmt % i).str(), 0));
@@ -180,16 +259,47 @@ int main(int argc, char **argv)
 
     // build optimization problem
     typedef g2o::BlockSolver<g2o::BlockSolverTraits<6, 3>> DirectBlock; // 求解的向量是6＊1的
-    DirectBlock::LinearSolverType *linearSolver = new g2o::LinearSolverDense<DirectBlock::PoseMatrixType>();
-    DirectBlock *solver_ptr = new DirectBlock(linearSolver);
-    g2o::OptimizationAlgorithmLevenberg *solver = new g2o::OptimizationAlgorithmLevenberg(solver_ptr); // L-M
+    typedef g2o::LinearSolverDense<DirectBlock::PoseMatrixType> LinearSolverType;
+    auto solver =
+        new g2o::OptimizationAlgorithmLevenberg(g2o::make_unique<DirectBlock>(g2o::make_unique<LinearSolverType>()));
     g2o::SparseOptimizer optimizer;
     optimizer.setAlgorithm(solver);
     optimizer.setVerbose(true);
 
     // TODO add vertices, edges into the graph optimizer
     // START YOUR CODE HERE
-
+    for (int i = 0; i < points.size(); ++i)
+    {
+        g2o::VertexSBAPointXYZ *pPoint = new g2o::VertexSBAPointXYZ();
+        pPoint->setId(i);
+        pPoint->setEstimate(points[i]);
+        pPoint->setMarginalized(true);
+        optimizer.addVertex(pPoint);
+    }
+    for (int j = 0; j < poses.size(); ++j)
+    {
+        VertexSophus *vertexTcw = new VertexSophus();
+        vertexTcw->setEstimate(poses[j]);
+        vertexTcw->setId(j + points.size());
+        optimizer.addVertex(vertexTcw);
+    }
+    for (int j = 0; j < poses.size(); ++j)
+    {
+        for (int i = 0; i < points.size(); ++i)
+        {
+            EdgeDirectProjection *edge = new EdgeDirectProjection(color[i], images[j]);
+            // 先point后pose
+            edge->setVertex(0, dynamic_cast<g2o::VertexSBAPointXYZ *>(optimizer.vertex(i)));
+            edge->setVertex(1, dynamic_cast<VertexSophus *>(optimizer.vertex(j + points.size())));
+            // 信息矩阵可直接设置为error_dim * error_dim的单位矩阵
+            edge->setInformation(Eigen::Matrix<double, 16, 16>::Identity());
+            // 设置Huber核函数，减小outlier影响，增加鲁棒性
+            g2o::RobustKernelHuber *rk = new g2o::RobustKernelHuber;
+            rk->setDelta(1.0);
+            edge->setRobustKernel(rk);
+            optimizer.addEdge(edge);
+        }
+    }
     // END YOUR CODE HERE
 
     // perform optimization
@@ -198,6 +308,16 @@ int main(int argc, char **argv)
 
     // TODO fetch data from the optimizer
     // START YOUR CODE HERE
+    for (int j = 0; j < poses.size(); ++j)
+    {
+        for (int i = 0; i < points.size(); ++i)
+        {
+            Eigen::Vector3d Pw = dynamic_cast<g2o::VertexSBAPointXYZ *>(optimizer.vertex(i))->estimate();
+            points[i] = Pw;
+            Sophus::SE3d Tcw = dynamic_cast<VertexSophus *>(optimizer.vertex(j + points.size()))->estimate();
+            poses[j] = Tcw;
+        }
+    }
     // END YOUR CODE HERE
 
     // plot the optimized points and poses

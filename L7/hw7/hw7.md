@@ -33,22 +33,46 @@ BA之后的点云图为
 ![final](./final.png)
 可以看出点云的结构特征有了非常明显的改善
 
-## 直接法的Bundle Adjustment
+## 3.直接法的Bundle Adjustment
 **3.1 数学模型**
 
 *1.如何描述任意一点投影在任一图像中形成的error?*
+第i个特征点投影在第j个相机中，投影后点周围小块与原始的4x4小块之间灰度值的差异之和
+$$\boldsymbol{e_{ij} = \sum_{W}||I(p_i) - I_j(\pi(KT_jp_i))||_2^2}$$
 
 *2.每个error关联几个优化变量?*
+第i个特征点投影在第j个相机中，关联第i个3D坐标点(3维)和第j个相机位姿(6维)这两个优化变量
 
 *3.error关于各变量的雅可比是什么?*
+$$\frac{\partial u}{\partial P}  = \begin{bmatrix} \frac{\partial u}{\partial X} & \frac{\partial u}{\partial Y} & \frac{\partial u}{\partial Z} \\ \frac{\partial v}{\partial X} & \frac{\partial v}{\partial Y} & \frac{\partial v}{\partial Z} \end{bmatrix} = \begin{bmatrix} \frac{f_x}{Z} & 0 & \frac{-f_xX}{Z^2} \\ 0 & \frac{f_y}{Z} & \frac{-f_yY}{Z^2} \end{bmatrix}$$
 
+$$\frac{\partial P}{\partial \delta \xi} = \begin{bmatrix} I & -P\char`^ \end{bmatrix}$$
+
+$$\frac{\partial u}{\partial\delta\xi} = \begin{bmatrix} \frac{f_x}{Z} & 0 & -\frac{f_xX}{Z^2} & -\frac{f_xXY}{Z^2} & f_x+\frac{f_xX^2}{Z^2} & -\frac{f_xY}{Z} \\ 0 & \frac{f_y}{Z} & -\frac{f_yY}{Z^2} & -f_y-\frac{f_yY^2}{Z^2} & \frac{f_yXY}{Z^2} & \frac{f_yX}{Z}\end{bmatrix}$$
+
+对位姿$\xi_j$的Jacobian为：
+$$J_{\xi_j} = -\frac{\partial I_j}{\partial u}\frac{\partial u}{\partial \delta \xi}$$
+
+对三维点$P_i$的Jacobian为：
+$$J_{P_i} = -\frac{\partial I_j}{\partial u}\frac{\partial u}{\partial P}$$
 
 **3.2 实现**
 
 *1.能否不要以$[x,y,z]^T$的形式参数化每个点?*
+可以用逆深度的方式参数化
 
 *2.取4x4的patch好吗?取更大的patch好还是取小一点的patch好?*
+挺好的。
+取更大的patch增加计算量；更小的patch鲁棒性变差
 
 *3.从本题中，你看到直接法与特征点法在BA阶段有何不同?*
+直接法计算光度误差，特征点法计算重投影误差，误差形式和雅可比形式不一样。
 
 *4.由于图像的差异，你可能需要鲁棒核函数，例如Huber。此时Huber的阈值如何选取?*
+可以先计算一步得到总误差除以点数获得一个平均误差，再根据该值设置Huber的阈值
+
+程序运行结果为：
+![run](./run_directBA.png)
+
+BA之后的效果如下：
+![result](./result.png)
