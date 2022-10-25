@@ -1,3 +1,0 @@
-## 1.重投影误差(reprojection error)的导数
-假设有相机位姿$\boldsymbol{T_{i = 1,...,m}}$和$3D$特征点$\boldsymbol{y_{j = 1,...,n}}$，相机$\boldsymbol{T_{i}}$的图像中看到$\boldsymbol{y_{j}}$所在位置为$\boldsymbol{z_{i,j}}$，而根据针孔相机模型将$\boldsymbol{y_{j}}$投影在$\boldsymbol{T_{i}}$中的预测位置为$\boldsymbol{\hat{z}(T_i,y_j)}$，这两个位置间残差(重投影误差)为$\boldsymbol{e_{i,j}}$ $$\boldsymbol{e_{i,j} := z_{i,j} - \hat{z}(T_i,y_j)}$$
-相机投影模型为 $$\boldsymbol{\hat{z}(x) = } proj \boldsymbol{(x) = K\cdot \frac{1}{x_3}\cdot x}$$ 
