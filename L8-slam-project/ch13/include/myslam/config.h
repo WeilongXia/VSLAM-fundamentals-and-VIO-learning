@@ -32,6 +32,10 @@ class Config
     {
         return T(Config::config_->file_[key]);
     }
+    // static std::string Get(const std::string &key)
+    // {
+    //     return std::string(Config::config_->file_[key]);
+    // }
 };
 } // namespace myslam
 

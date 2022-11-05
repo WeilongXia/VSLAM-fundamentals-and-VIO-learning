@@ -1,11 +1,18 @@
 #include "myslam/config.h"
 
-namespace myslam {
-bool Config::SetParameterFile(const std::string &filename) {
+namespace myslam
+{
+bool Config::SetParameterFile(const std::string &filename)
+{
     if (config_ == nullptr)
+    {
         config_ = std::shared_ptr<Config>(new Config);
-    config_->file_ = cv::FileStorage(filename.c_str(), cv::FileStorage::READ);
-    if (config_->file_.isOpened() == false) {
+    }
+    // config_->file_ = cv::FileStorage(filename.c_str(), cv::FileStorage::READ);
+    static cv::FileStorage file(filename.c_str(), cv::FileStorage::READ);
+    config_->file_ = file;
+    if (config_->file_.isOpened() == false)
+    {
         LOG(ERROR) << "parameter file " << filename << " does not exist.";
         config_->file_.release();
         return false;
@@ -13,11 +20,12 @@ bool Config::SetParameterFile(const std::string &filename) {
     return true;
 }
 
-Config::~Config() {
+Config::~Config()
+{
     if (file_.isOpened())
         file_.release();
 }
 
 std::shared_ptr<Config> Config::config_ = nullptr;
 
-}
+} // namespace myslam
