@@ -37,7 +37,7 @@ void LoadImages(const std::string &strPathToSequence, std::vector<std::string> &
 
 int main(int argc, char **argv)
 {
-    if (argc != 4)
+    if (argc != 3)
     {
         std::cerr << std::endl << "Usage: ./stereo_odometry path_to_settings path_to_sequence" << std::endl;
         return 1;

@@ -1,0 +1,11 @@
+{
+    "files.associations": {
+        "mutex": "cpp",
+        "condition_variable": "cpp",
+        "sstream": "cpp",
+        "*.ipp": "cpp",
+        "deque": "cpp",
+        "string": "cpp",
+        "vector": "cpp"
+    }
+}

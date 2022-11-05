@@ -17,3 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with ORB-SLAM2. If not, see <http://www.gnu.org/licenses/>.
  */
+
+/**
+ * This is a file which instantiates all the classes like
+ * Tracking, LocalMapping and so on.
+ */
+
+#ifndef SYSTEM_H
+#define SYSTEM_H
+
+#endif
