@@ -7,14 +7,17 @@
 #include "myslam/dataset.h"
 #include "myslam/frontend.h"
 #include "myslam/viewer.h"
+#include <fstream>
 
-namespace myslam {
+namespace myslam
+{
 
 /**
  * VO 对外接口
  */
-class VisualOdometry {
-   public:
+class VisualOdometry
+{
+  public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
     typedef std::shared_ptr<VisualOdometry> Ptr;
 
@@ -38,9 +41,14 @@ class VisualOdometry {
     bool Step();
 
     /// 获取前端状态
-    FrontendStatus GetFrontendStatus() const { return frontend_->GetStatus(); }
+    FrontendStatus GetFrontendStatus() const
+    {
+        return frontend_->GetStatus();
+    }
 
-   private:
+    void SaveTrajectoryKITTI(const std::string &filename);
+
+  private:
     bool inited_ = false;
     std::string config_file_path_;
 
@@ -51,7 +59,10 @@ class VisualOdometry {
 
     // dataset
     Dataset::Ptr dataset_ = nullptr;
-};
-}  // namespace myslam
 
-#endif  // MYSLAM_VISUAL_ODOMETRY_H
+    // translation and rotation result
+    std::list<Mat44> mlRelativeFramePoses_;
+};
+} // namespace myslam
+
+#endif // MYSLAM_VISUAL_ODOMETRY_H
