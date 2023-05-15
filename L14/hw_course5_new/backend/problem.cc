@@ -420,11 +420,11 @@ void Problem::SolveLinearSystem()
         int marg_size = ordering_landmarks_;
 
         // TODO:: home work. 完成矩阵块取值，Hmm，Hpm，Hmp，bpp，bmm
-        MatXX Hmm = Hessian_.block(ordering_poses_, ordering_poses_, ordering_landmarks_, ordering_landmarks_);
-        MatXX Hpm = Hessian_.block(0, ordering_poses_, ordering_poses_, ordering_landmarks_);
-        MatXX Hmp = Hessian_.block(ordering_poses_, 0, ordering_landmarks_, ordering_poses_);
-        VecX bpp = b_.segment(0, ordering_poses_);
-        VecX bmm = b_.segment(ordering_poses_, ordering_landmarks_);
+        MatXX Hmm = Hessian_.block(reserve_size, reserve_size, marg_size, marg_size);
+        MatXX Hpm = Hessian_.block(0, reserve_size, reserve_size, marg_size);
+        MatXX Hmp = Hessian_.block(reserve_size, 0, marg_size, reserve_size);
+        VecX bpp = b_.segment(0, reserve_size);
+        VecX bmm = b_.segment(reserve_size, marg_size);
 
         // Hmm
         // 是对角线矩阵，它的求逆可以直接为对角线块分别求逆，如果是逆深度，对角线块为1维的，则直接为对角线的倒数，这里可以加速

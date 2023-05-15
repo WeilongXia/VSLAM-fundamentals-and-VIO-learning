@@ -71,7 +71,7 @@ int main()
     shared_ptr<CurveFittingVertex> vertex(new CurveFittingVertex());
 
     // 设定待估计参数 a, b, c初始值
-    vertex->SetParameters(Eigen::Vector3d(0., 0., 0.));
+    vertex->SetParameters(Eigen::Vector3d(0.0, 0.0, 0.0));
     // 将待估计的参数加入最小二乘问题
     problem.AddVertex(vertex);
 

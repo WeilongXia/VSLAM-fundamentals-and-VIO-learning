@@ -7,8 +7,8 @@
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
-#include <vector>
 #include <map>
+#include <vector>
 
 // double matricies
 typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> MatXX;
@@ -104,7 +104,5 @@ typedef std::vector<Vec3f, Eigen::aligned_allocator<Vec3f>> VecVec3f;
 
 // Map of Eigen matrix
 typedef std::map<unsigned long, MatXX, std::less<unsigned long>, Eigen::aligned_allocator<MatXX>> MapMatXX;
-
-
 
 #endif

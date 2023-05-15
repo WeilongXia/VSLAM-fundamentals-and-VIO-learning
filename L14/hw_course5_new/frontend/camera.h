@@ -8,18 +8,19 @@
 #include "backend/eigen_types.h"
 #include "sophus/se3.hpp"
 
-namespace myslam {
-namespace frontend {
+namespace myslam
+{
+namespace frontend
+{
 
-struct PinholeCamera {
+struct PinholeCamera
+{
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 
-    PinholeCamera(
-        const float &_fx, const float &_fy,
-        const float &_cx, const float &_cy,
-        const Sophus::SE3 &extrinsics,
-        const float _bf = 0)
-        : fx(_fx), fy(_fy), cx(_cx), cy(_cy), bf(_bf) {
+    PinholeCamera(const float &_fx, const float &_fy, const float &_cx, const float &_cy, const Sophus::SE3 &extrinsics,
+                  const float _bf = 0)
+        : fx(_fx), fy(_fy), cx(_cx), cy(_cy), bf(_bf)
+    {
         K << fx, 0, cx, 0, fy, cy, 0, 0, 1;
         fxinv = 1 / fx;
         fyinv = 1 / fy;
@@ -35,17 +36,17 @@ struct PinholeCamera {
     float fyinv = 0;
     float cx = 0;
     float cy = 0;
-    float b = 0;    // baseline in stereo
-    float f = 0;    // focal length
-    float bf = 0;   // baseline*focal
+    float b = 0;  // baseline in stereo
+    float f = 0;  // focal length
+    float bf = 0; // baseline*focal
 
-    Eigen::Matrix3f K = Eigen::Matrix3f::Identity();     // intrinsics
-    Eigen::Matrix3f Kinv = Eigen::Matrix3f::Identity();  // inverse K
+    Eigen::Matrix3f K = Eigen::Matrix3f::Identity();    // intrinsics
+    Eigen::Matrix3f Kinv = Eigen::Matrix3f::Identity(); // inverse K
 
     Sophus::SE3d extrinsic; // extrinsics
 };
 
-}
-}
+} // namespace frontend
+} // namespace myslam
 
-#endif //SLAM_COURSE_CAMERA_H
+#endif // SLAM_COURSE_CAMERA_H

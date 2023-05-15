@@ -5,20 +5,23 @@
 #ifndef SLAM_COURSE_FEATURE_H
 #define SLAM_COURSE_FEATURE_H
 
-#include <memory>
 #include "backend/eigen_types.h"
+#include <memory>
 
-namespace myslam {
-namespace frontend {
+namespace myslam
+{
+namespace frontend
+{
 
 struct Frame;
 struct MapPoint;
 
-struct Feature {
+struct Feature
+{
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 
-    explicit Feature(
-        const Vec2f &pixel, std::shared_ptr<Frame> ref) {
+    explicit Feature(const Vec2f &pixel, std::shared_ptr<Frame> ref)
+    {
         ref_frame = ref;
     }
 
@@ -28,7 +31,7 @@ struct Feature {
     std::weak_ptr<MapPoint> map_point;
 };
 
-}
-}
+} // namespace frontend
+} // namespace myslam
 
-#endif //SLAM_COURSE_FEATURE_H
+#endif // SLAM_COURSE_FEATURE_H
